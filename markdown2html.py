@@ -9,94 +9,79 @@ It converts the Markdown content to HTML and writes it to the output file.
 
 import re
 import sys
+import os
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: ./markdown2html.py input_file output_file")
-        sys.exit(1)
+    if len(sys.argv) < 3:
+        sys.stderr.write("Usage: ./markdown2html.py README.md README.html\n")
+        exit(1)
+    if not os.path.exists(sys.argv[1]):
+        sys.stderr.write("Missing " + sys.argv[1] + "\n")
+        exit(1)
 
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
+    with open(sys.argv[1]) as r:
+        with open(sys.argv[2], 'w') as w:
+            change_status = False
+            ordered_status = False
+            paragraph = False
+            for line in r:
+                line = line.replace('**', '<b>', 1)
+                line = line.replace('**', '</b>', 1)
+                line = line.replace('__', '<em>', 1)
+                line = line.replace('__', '</em>', 1)
 
-    try:
-        # Read the Markdown file
-        with open(input_file, 'r') as file:
-            markdown_text = file.read()
+                length = len(line)
+                headings = line.lstrip('#')
+                heading_count = length - len(headings)
+                unordered = line.lstrip('-')
+                unordered_count = length - len(unordered)
+                ordered = line.lstrip('*')
+                ordered_count = length - len(ordered)
 
-        # Initialize variables
-        html_text = ''
-        change_status = False
-        ordered_status = False
-        paragraph = False
+                if 1 <= heading_count <= 6:
+                    line = (
+                        '<h{}>'.format(
+                            heading_count
+                            ) + headings.strip() + '</h{}>\n'.format(
+                             heading_count)
+                    )
 
-        # Regular expressions for matching Markdown syntax
-        heading_regex = re.compile(r'^(#{1,6})\s+(.*)', re.MULTILINE)
-        list_regex = re.compile(
-            r'(^\s*-\s.*(?:\n\s*-\s.*)*)', re.MULTILINE | re.DOTALL)
+                if unordered_count:
+                    if not change_status:
+                        w.write('<ul>\n')
+                        change_status = True
+                    line = '<li>' + unordered.strip() + '</li>\n'
+                elif change_status:
+                    w.write('</ul>\n')
+                    change_status = False
 
-        # Process each line of the Markdown text
-        lines = markdown_text.splitlines(True)
-        for line in lines:
-            line = line.rstrip()  # Remove trailing whitespace
+                if ordered_count:
+                    if not ordered_status:
+                        w.write('<ol>\n')
+                        ordered_status = True
+                    line = '<li>' + ordered.strip() + '</li>\n'
+                elif ordered_status:
+                    w.write('</ol>\n')
+                    ordered_status = False
 
-            # Check for headings
-            heading_match = heading_regex.match(line)
-            if heading_match:
-                level = len(heading_match.group(1))
-                text = heading_match.group(2)
-                html_text += f'<h{level}>{text}</h{level}>\n'
-                continue
+                if not (heading_count or change_status or ordered_status):
+                    if not paragraph and length > 1:
+                        w.write('<p>\n')
+                        paragraph = True
+                    elif length > 1:
+                        w.write('<br/>\n')
+                    elif paragraph:
+                        w.write('</p>\n')
+                        paragraph = False
 
-            # Check for unordered lists
-            list_match = list_regex.match(line)
-            if list_match:
-                items = line.strip().split('\n')
-                if not change_status:
-                    html_text += '<ul>\n'
-                    change_status = True
-                for item in items:
-                    html_text += f'<li>{item.strip()[2:]}</li>\n'
-                continue
+                if length > 1:
+                    w.write(line)
 
-            # End of unordered list
-            if change_status and not list_regex.match(line):
-                html_text += '</ul>\n'
-                change_status = False
+            if ordered_status:
+                w.write('</ol>\n')
+            if change_status:
+                w.write('</ul>\n')
+            if paragraph:
+                w.write('</p>\n')
 
-            # Check for ordered lists (if needed in future)
-            # ...
-
-            # Check for paragraphs
-            if not heading_match and not change_status:
-                if not paragraph and line:
-                    html_text += '<p>\n'
-                    paragraph = True
-                elif line:
-                    html_text += '<br/>\n'
-                elif paragraph:
-                    html_text += '</p>\n'
-                    paragraph = False
-
-            # Add regular text
-            if line:
-                html_text += line + '\n'
-
-        # Close any open tags
-        if change_status:
-            html_text += '</ul>\n'
-        if paragraph:
-            html_text += '</p>\n'
-
-        # Ensure there is a newline at the end of the HTML text
-        html_text = html_text.strip() + '\n'
-
-        # Write HTML to the output file
-        with open(output_file, 'w') as file:
-            file.write(html_text)
-
-    except FileNotFoundError:
-        print(f"Error: The file {input_file} does not exist.")
-        sys.exit(1)
-    except IOError as e:
-        print(f"Error: {e}")
-        sys.exit(1)
+    exit(0)
