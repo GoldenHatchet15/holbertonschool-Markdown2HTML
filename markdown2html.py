@@ -7,7 +7,6 @@ and the output HTML file.
 It converts the Markdown content to HTML and writes it to the output file.
 """
 
-import re
 import sys
 import os
 
@@ -21,14 +20,13 @@ if __name__ == "__main__":
 
     with open(sys.argv[1]) as r:
         with open(sys.argv[2], 'w') as w:
-            change_status = False
-            ordered_status = False
-            paragraph = False
+            in_list = False
+            in_ordered_list = False
+            in_paragraph = False
+            paragraph_lines = []
+
             for line in r:
-                line = line.replace('**', '<b>', 1)
-                line = line.replace('**', '</b>', 1)
-                line = line.replace('__', '<em>', 1)
-                line = line.replace('__', '</em>', 1)
+                line = line.rstrip('\n')  # Remove trailing newline characters
 
                 length = len(line)
                 headings = line.lstrip('#')
@@ -38,50 +36,78 @@ if __name__ == "__main__":
                 ordered = line.lstrip('*')
                 ordered_count = length - len(ordered)
 
+                # Handle headings
                 if 1 <= heading_count <= 6:
-                    line = (
-                        '<h{}>'.format(
-                            heading_count
-                            ) + headings.strip() + '</h{}>\n'.format(
-                             heading_count)
-                    )
+                    if in_paragraph:
+                        # Write paragraph content with line breaks
+                        paragraph_content = '\n'.join(paragraph_lines).strip()
+                        w.write('<p>\n' + paragraph_content + '\n</p>\n')
+                        in_paragraph = False
+                        paragraph_lines = []
+                    if in_list:
+                        w.write('</ul>\n')
+                        in_list = False
+                    if in_ordered_list:
+                        w.write('</ol>\n')
+                        in_ordered_list = False
+                    line = '<h{}>{}</h{}>'.format(
+                        heading_count,
+                        headings.strip(), heading_count)
+                    w.write(line + '\n')
+                    continue
 
+                # Handle unordered lists
                 if unordered_count:
-                    if not change_status:
+                    if not in_list:
                         w.write('<ul>\n')
-                        change_status = True
-                    line = '<li>' + unordered.strip() + '</li>\n'
-                elif change_status:
-                    w.write('</ul>\n')
-                    change_status = False
+                        in_list = True
+                    line = '<li>{}</li>'.format(unordered.strip())
+                    w.write(line + '\n')
+                    continue
 
+                # Handle ordered lists
                 if ordered_count:
-                    if not ordered_status:
+                    if not in_ordered_list:
                         w.write('<ol>\n')
-                        ordered_status = True
-                    line = '<li>' + ordered.strip() + '</li>\n'
-                elif ordered_status:
-                    w.write('</ol>\n')
-                    ordered_status = False
+                        in_ordered_list = True
+                    line = '<li>{}</li>'.format(ordered.strip())
+                    w.write(line + '\n')
+                    continue
 
-                if not (heading_count or change_status or ordered_status):
-                    if not paragraph and length > 1:
-                        w.write('<p>\n')
-                        paragraph = True
-                    elif length > 1:
-                        w.write('<br/>\n')
-                    elif paragraph:
-                        w.write('</p>\n')
-                        paragraph = False
+                # Handle blank lines
+                if length <= 1:  # Blank line
+                    if in_paragraph:
+                        # Write paragraph content with line breaks
+                        paragraph_content = '\n'.join(paragraph_lines).strip()
+                        w.write('<p>\n' + paragraph_content + '\n</p>\n')
+                        in_paragraph = False
+                        paragraph_lines = []
+                    if in_list:
+                        w.write('</ul>\n')
+                        in_list = False
+                    if in_ordered_list:
+                        w.write('</ol>\n')
+                        in_ordered_list = False
+                    continue
 
-                if length > 1:
-                    w.write(line)
+                # Handle paragraphs
+                if not (heading_count or in_list or in_ordered_list):
+                    if not in_paragraph:
+                        in_paragraph = True
+                        paragraph_lines = []
+                    # Append line with <br /> tags,
+                    # but avoid adding <br /> at the end of paragraphs
+                    if paragraph_lines:
+                        line = '<br/>\n' + line
+                    paragraph_lines.append(line)
 
-            if ordered_status:
-                w.write('</ol>\n')
-            if change_status:
+            # Close any open tags
+            if in_paragraph:
+                paragraph_content = '\n'.join(paragraph_lines).strip()
+                w.write('<p>\n' + paragraph_content + '\n</p>\n')
+            if in_list:
                 w.write('</ul>\n')
-            if paragraph:
-                w.write('</p>\n')
+            if in_ordered_list:
+                w.write('</ol>\n')
 
     exit(0)
