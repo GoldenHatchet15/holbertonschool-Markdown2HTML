@@ -13,10 +13,9 @@ import sys
 
 def markdown_to_html(markdown_text):
     """Convert Markdown text to HTML."""
-    # Regular expression to match Markdown headings
-    heading_regex = re.compile(r'^(#{1,6})\s+(.*)', re.MULTILINE)
 
-    # Regular expression to match blocks of unordered lists
+    # Regular expressions to match Markdown headings and unordered lists
+    heading_regex = re.compile(r'^(#{1,6})\s+(.*)', re.MULTILINE)
     list_regex = (
         re.compile(r'(^\s*-\s.*(?:\n\s*-\s.*)*)', re.MULTILINE | re.DOTALL)
     )
@@ -32,7 +31,7 @@ def markdown_to_html(markdown_text):
         items = match.group(0).strip().split('\n')
         html_list = (
             '<ul>\n' +
-            '\n'.join(f'    <li>{item.strip()[2:]}</li>' for item in items) +
+            '\n'.join(f'<li>{item.strip()[2:]}</li>' for item in items) +
             '\n</ul>'
         )
         return html_list
@@ -43,7 +42,8 @@ def markdown_to_html(markdown_text):
     # Replace headings
     html_text = heading_regex.sub(replace_heading, markdown_text)
 
-    return html_text
+    # Remove trailing whitespace
+    return html_text.strip()
 
 
 def main(input_file, output_file):
