@@ -56,9 +56,9 @@ def main(input_file, output_file):
         # Convert Markdown to HTML
         html_text = markdown_to_html(markdown_text)
 
-        # Write HTML to the output file
+        # Write HTML to the output file with a newline at the end
         with open(output_file, 'w') as file:
-            file.write(html_text)
+            file.write(html_text + '\n')
 
     except FileNotFoundError:
         print(f"Error: The file {input_file} does not exist.")
