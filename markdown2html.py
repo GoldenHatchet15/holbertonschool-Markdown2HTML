@@ -1,73 +1,53 @@
 #!/usr/bin/python3
-"""
-Markdown to HTML converter script.
 
-This script takes two arguments: the input Markdown file
-and the output HTML file.
-It converts the Markdown content to HTML and writes it to the output file.
-"""
-
-import sys
-import os
 import re
+import sys
 
 
 def markdown_to_html(markdown_text):
-    # Converting headers
-    markdown_text = re.sub(
-        r"(^|\n)###### (.*?)(\n|$)", r"\1<h6>\2</h6>\3", markdown_text)
-    markdown_text = re.sub(
-        r"(^|\n)##### (.*?)(\n|$)", r"\1<h5>\2</h5>\3", markdown_text)
-    markdown_text = re.sub(
-        r"(^|\n)#### (.*?)(\n|$)", r"\1<h4>\2</h4>\3", markdown_text)
-    markdown_text = re.sub(
-        r"(^|\n)### (.*?)(\n|$)", r"\1<h3>\2</h3>\3", markdown_text)
-    markdown_text = re.sub(
-        r"(^|\n)## (.*?)(\n|$)", r"\1<h2>\2</h2>\3", markdown_text)
-    markdown_text = re.sub(
-        r"(^|\n)# (.*?)(\n|$)", r"\1<h1>\2</h1>\3", markdown_text)
+    """Convert Markdown headings to HTML."""
+    # Regular expression to match Markdown headings
+    heading_regex = re.compile(r'^(#{1,6})\s+(.*)', re.MULTILINE)
 
-    # Converting bold text
-    markdown_text = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", markdown_text)
-    markdown_text = re.sub(r"__(.*?)__", r"<b>\1</b>", markdown_text)
+    def replace_heading(match):
+        """Convert Markdown heading to HTML."""
+        level = len(match.group(1))
+        text = match.group(2)
+        return f'<h{level}>{text}</h{level}>'
 
-    # Converting paragraphs
-    paragraphs = markdown_text.split("\n\n")
-    html_paragraphs = []
-    for p in paragraphs:
-        if not (p.startswith('<h') and p.endswith('>')):
-            p = f"<p>{p}</p>"
-        html_paragraphs.append(p)
-
-    html_text = "\n\n".join(html_paragraphs)
-
+    # Replace Markdown headings with HTML
+    html_text = heading_regex.sub(replace_heading, markdown_text)
     return html_text
 
 
+def main(input_file, output_file):
+    """Read Markdown file, convert to HTML, and write to output file."""
+    try:
+        # Read the Markdown file
+        with open(input_file, 'r') as file:
+            markdown_text = file.read()
+
+        # Convert Markdown to HTML
+        html_text = markdown_to_html(markdown_text)
+
+        # Write HTML to the output file
+        with open(output_file, 'w') as file:
+            file.write(html_text)
+
+    except FileNotFoundError:
+        print(f"Error: The file {input_file} does not exist.")
+        sys.exit(1)
+    except IOError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print(
-            "Usage: ./markdown2html.py README.md README.html",
-            file=sys.stderr
-        )
+    if len(sys.argv) != 3:
+        print("Usage: ./markdown2html.py input_file output_file")
         sys.exit(1)
 
     input_file = sys.argv[1]
     output_file = sys.argv[2]
 
-    if not os.path.isfile(input_file):
-        print(f"Missing {input_file}", file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        with open(input_file, 'r') as file:
-            markdown_text = file.read()
-            html_text = markdown_to_html(markdown_text)
-
-        with open(output_file, 'w') as file:
-            file.write(html_text)
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    sys.exit(0)
+    main(input_file, output_file)
