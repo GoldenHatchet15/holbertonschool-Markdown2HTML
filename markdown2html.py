@@ -1,4 +1,11 @@
 #!/usr/bin/python3
+"""
+Markdown to HTML converter script.
+
+This script takes two arguments: the input Markdown file
+and the output HTML file.
+It converts the Markdown content to HTML and writes it to the output file.
+"""
 
 import re
 import sys
