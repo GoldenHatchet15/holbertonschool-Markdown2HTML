@@ -31,7 +31,7 @@ def markdown_to_html(markdown_text):
         items = match.group(0).strip().split('\n')
         html_list = (
             '<ul>\n' +
-            '\n'.join(f'<li>{item.strip()[2:]}</li>' for item in items) +
+            '\n'.join(f'    <li>{item.strip()[2:]}</li>' for item in items) +
             '\n</ul>'
         )
         return html_list
@@ -42,8 +42,8 @@ def markdown_to_html(markdown_text):
     # Replace headings
     html_text = heading_regex.sub(replace_heading, markdown_text)
 
-    # Remove trailing whitespace
-    return html_text.strip()
+    # Ensure there is a newline at the end of the HTML text
+    return html_text.strip() + '\n'
 
 
 def main(input_file, output_file):
@@ -58,7 +58,7 @@ def main(input_file, output_file):
 
         # Write HTML to the output file with a newline at the end
         with open(output_file, 'w') as file:
-            file.write(html_text + '\n')
+            file.write(html_text)
 
     except FileNotFoundError:
         print(f"Error: The file {input_file} does not exist.")
