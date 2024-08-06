@@ -17,7 +17,9 @@ def markdown_to_html(markdown_text):
     heading_regex = re.compile(r'^(#{1,6})\s+(.*)', re.MULTILINE)
 
     # Regular expression to match Markdown unordered lists
-    list_regex = re.compile(r'^\s*-\s+(.*)', re.MULTILINE)
+    list_regex = (
+        re.compile(r'^(\s*-\s.*)(?:\n(?=\s*-\s)|$)', re.MULTILINE | re.DOTALL)
+    )
 
     def replace_heading(match):
         """Convert Markdown heading to HTML."""
@@ -27,7 +29,7 @@ def markdown_to_html(markdown_text):
 
     def replace_list(match):
         """Convert Markdown unordered list to HTML."""
-        items = match.group(0).splitlines()
+        items = match.group(0).strip().split('\n')
         html_list = (
             '<ul>\n' +
             '\n'.join(f'<li>{item.strip()[2:]}</li>' for item in items) +
@@ -35,10 +37,10 @@ def markdown_to_html(markdown_text):
         )
         return html_list
 
-    # First, replace unordered lists
+    # Replace unordered lists first
     markdown_text = list_regex.sub(replace_list, markdown_text)
 
-    # Then replace headings
+    # Replace headings
     html_text = heading_regex.sub(replace_heading, markdown_text)
 
     return html_text
