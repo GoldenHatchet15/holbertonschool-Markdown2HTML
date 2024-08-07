@@ -9,6 +9,7 @@ It converts the Markdown content to HTML and writes it to the output file.
 
 import sys
 import os
+import hashlib
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
@@ -28,22 +29,37 @@ if __name__ == "__main__":
             for line in r:
                 line = line.rstrip('\n')  # Remove trailing newline characters
 
+                # Handle [[text]] to MD5 hash
+                while '[[' in line:
+                    start = line.index('[[')
+                    end = line.index(']]', start + 2)
+                    md5_content = line[start + 2:end]
+                    md5_hash = hashlib.md5(md5_content.encode()).hexdigest()
+                    line = line[:start] + md5_hash + line[end + 2:]
+
+                # Handle ((text)) to remove 'c'
+                while '((' in line:
+                    start = line.index('((')
+                    end = line.index('))', start + 2)
+                    removed_c_content = (
+                        line[start + 2:end].replace('c', '').replace('C', '')
+                        )
+                    line = line[:start] + removed_c_content + line[end + 2:]
+
                 # Handle bold and emphasis
                 while '**' in line or '__' in line:
                     if '**' in line:
                         start = line.index('**')
                         end = line.index('**', start + 2)
-                        line = (
-                            line[:start] + '<b>' +
-                            line[start + 2:end] + '</b>' +
-                            line[end + 2:]
-                        )
+                        line = (line[:start] +
+                                '<b>' + line[start + 2:end] +
+                                '</b>' + line[end + 2:])
                     elif '__' in line:
                         start = line.index('__')
                         end = line.index('__', start + 2)
                         line = (line[:start] + '<em>' +
-                                line[start + 2:end] + '</em>' +
-                                line[end + 2:])
+                                line[start + 2:end] +
+                                '</em>' + line[end + 2:])
 
                 length = len(line)
                 headings = line.lstrip('#')
