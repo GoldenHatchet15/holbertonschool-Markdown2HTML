@@ -28,6 +28,23 @@ if __name__ == "__main__":
             for line in r:
                 line = line.rstrip('\n')  # Remove trailing newline characters
 
+                # Handle bold and emphasis
+                while '**' in line or '__' in line:
+                    if '**' in line:
+                        start = line.index('**')
+                        end = line.index('**', start + 2)
+                        line = (
+                            line[:start] + '<b>' +
+                            line[start + 2:end] + '</b>' +
+                            line[end + 2:]
+                        )
+                    elif '__' in line:
+                        start = line.index('__')
+                        end = line.index('__', start + 2)
+                        line = (line[:start] + '<em>' +
+                                line[start + 2:end] + '</em>' +
+                                line[end + 2:])
+
                 length = len(line)
                 headings = line.lstrip('#')
                 heading_count = length - len(headings)
